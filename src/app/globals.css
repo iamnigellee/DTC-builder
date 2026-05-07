@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+:root {
+  --background: #06060a;
+  --foreground: #f1f5f9;
+  --primary: #7c3aed;
+  --secondary: #4f46e5;
+  --accent: #f59e0b;
+  --muted: #1e1e2e;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Selection */
+::selection {
+  background: rgba(124, 58, 237, 0.3);
+  color: white;
+}
+
+/* Prose overrides for dark theme */
+.prose-invert :where(p):not(:where([class~="not-prose"] *)) {
+  color: #cbd5e1;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose-invert :where(ul):not(:where([class~="not-prose"] *)) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose-invert :where(li):not(:where([class~="not-prose"] *)) {
+  color: #cbd5e1;
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+}
+.prose-invert :where(strong):not(:where([class~="not-prose"] *)) {
+  color: white;
+  font-weight: 600;
+}
+.prose-invert :where(code):not(:where([class~="not-prose"] *)) {
+  color: #a78bfa;
+  background: rgba(124, 58, 237, 0.1);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+.prose-invert :where(pre):not(:where([class~="not-prose"] *)) {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+}
+.prose-invert :where(pre code):not(:where([class~="not-prose"] *)) {
+  background: transparent;
+  color: #e2e8f0;
+  padding: 0;
+  font-size: 0.8em;
+}
+.prose-invert :where(h1,h2,h3,h4):not(:where([class~="not-prose"] *)) {
+  color: white;
+  font-weight: 700;
+}
+.prose-invert :where(a):not(:where([class~="not-prose"] *)) {
+  color: #a78bfa;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
