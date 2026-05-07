@@ -1,12 +1,16 @@
 import { SiteRequirements } from '../types'
 import { getVibeCss } from './vibes'
 import { HERO_VARIANTS, NAVBAR_TEMPLATE } from '../modules/hero'
-import { PRODUCT_GRID_TEMPLATE, STRIPE_CHECKOUT_TEMPLATE } from '../modules/ecommerce'
+import { PRODUCT_GRID_TEMPLATE, STRIPE_CHECKOUT_TEMPLATE, CART_STORE_TEMPLATE } from '../modules/ecommerce'
 import {
   TESTIMONIALS_TEMPLATE,
   PRICING_TEMPLATE,
   FAQ_TEMPLATE,
   FOOTER_TEMPLATE,
+  NEWSLETTER_TEMPLATE,
+  STATS_TEMPLATE,
+  MENU_TEMPLATE,
+  BOOKING_FORM_TEMPLATE,
 } from '../modules/sections'
 
 export function buildCodeGenPrompt(requirements: SiteRequirements): string {
