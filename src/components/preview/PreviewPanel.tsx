@@ -6,6 +6,7 @@ import { Code2, Eye, Download, Loader2, Smartphone, Monitor, Tablet, FileArchive
 import { useBuilderStore } from '@/store/builderStore'
 import { CodeFileTree } from './CodeFileTree'
 import { CodeViewer } from './CodeViewer'
+import { LivePreview } from './LivePreview'
 import { cn } from '@/lib/utils'
 
 type ViewMode = 'code' | 'preview'
@@ -150,7 +151,7 @@ export function PreviewPanel() {
               animate={{ opacity: 1 }}
               className="flex-1 overflow-auto flex items-start justify-center bg-slate-950 p-4"
             >
-              <PreviewIframe
+              <LivePreview
                 files={generatedFiles}
                 width={DEVICE_WIDTHS[deviceMode]}
               />
@@ -207,72 +208,3 @@ function EmptyState({ isGenerating }: { isGenerating: boolean }) {
   )
 }
 
-function PreviewIframe({
-  files,
-  width,
-}: {
-  files: { path: string; content: string; language?: string }[]
-  width: string
-}) {
-  // Build a simple HTML preview from the page.tsx content
-  const pageFile = files.find(
-    (f) => f.path === 'src/app/page.tsx' || f.path.endsWith('page.tsx')
-  )
-  const cssFile = files.find((f) => f.language === 'css' || f.path.endsWith('.css'))
-
-  const previewHtml = buildPreviewHtml(
-    pageFile?.content || '',
-    cssFile?.content || ''
-  )
-
-  return (
-    <div
-      style={{ width, maxWidth: '100%' }}
-      className="transition-all duration-300 shadow-2xl rounded-lg overflow-hidden border border-white/10"
-    >
-      <iframe
-        srcDoc={previewHtml}
-        className="w-full"
-        style={{ minHeight: '600px', height: '80vh' }}
-        sandbox="allow-scripts"
-        title="网站预览"
-      />
-    </div>
-  )
-}
-
-function buildPreviewHtml(tsxCode: string, cssCode: string): string {
-  // Extract JSX-like content for a rough preview
-  const bodyContent = extractPlainContent(tsxCode)
-
-  return `<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-${cssCode}
-body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #0a0a0a; color: white; }
-</style>
-</head>
-<body>
-<div id="preview" class="min-h-screen">
-${bodyContent}
-</div>
-</body>
-</html>`
-}
-
-function extractPlainContent(tsx: string): string {
-  // Return a meaningful placeholder while full Sandpack isn't used
-  return `
-<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;background:linear-gradient(135deg,#0a0a0a 0%,#1a0a2e 100%)">
-  <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#4f46e5);display:flex;align-items:center;justify-content:center;font-size:28px">✨</div>
-  <h1 style="font-size:24px;font-weight:700;color:white;margin:0">代码已生成</h1>
-  <p style="color:#94a3b8;font-size:14px;margin:0;text-align:center">切换到「代码」视图查看完整源码<br>下载项目后本地运行可查看完整效果</p>
-  <div style="margin-top:16px;padding:12px 24px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:12px;font-size:14px;font-weight:600;color:white">
-    📦 共生成 ${tsx.length > 0 ? '5+ 个文件' : '...'}
-  </div>
-</div>`
-}

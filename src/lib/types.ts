@@ -22,6 +22,7 @@ export interface SiteRequirements {
   tagline: string
   targetAudience: string
   primaryGoal: string
+  vibe?: string
   features: SiteFeature[]
   colorPalette: ColorPalette
   fontStyle: FontStyle
