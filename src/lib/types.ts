@@ -80,6 +80,7 @@ export type SectionType =
   | 'cta'
   | 'stats'
   | 'blog'
+  | 'menu'
 
 export interface EcommerceConfig {
   productCount: number
@@ -94,6 +95,8 @@ export interface ContactConfig {
   phone?: string
   address?: string
   social?: SocialLinks
+  mapEmbed?: string
+  businessHours?: string
 }
 
 export interface SocialLinks {
@@ -102,6 +105,7 @@ export interface SocialLinks {
   facebook?: string
   linkedin?: string
   tiktok?: string
+  wechat?: string
 }
 
 export interface GeneratedSite {

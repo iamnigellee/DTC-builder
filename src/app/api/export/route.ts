@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
           '@types/react': '^19',
           '@types/react-dom': '^19',
           tailwindcss: '^4',
+          '@tailwindcss/postcss': '^4',
         },
       },
       null,
@@ -74,6 +75,26 @@ export async function POST(req: NextRequest) {
       null,
       2
     )
+  )
+
+  // next.config.ts
+  zip.file(
+    'next.config.ts',
+    `import type { NextConfig } from 'next'
+const nextConfig: NextConfig = {}
+export default nextConfig
+`
+  )
+
+  // postcss.config.mjs (required for Tailwind v4)
+  zip.file(
+    'postcss.config.mjs',
+    `export default {
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
+}
+`
   )
 
   // Add setup README
