@@ -16,37 +16,46 @@ export function useBuilder() {
     const requirements = store.context.requirements as SiteRequirements
     let fullResponse = ''
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120_000)
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requirements }),
+        signal: controller.signal,
       })
 
       const reader = res.body?.getReader()
       const decoder = new TextDecoder()
       if (!reader) throw new Error('No response body')
 
+      let buffer = ''
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n').filter((l) => l.startsWith('data: '))
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
 
         for (const line of lines) {
-          const data = JSON.parse(line.slice(6))
-          if (data.type === 'text') {
-            fullResponse += data.content
-            // Show file count progress — no raw code in chat
-            const fileCount = (fullResponse.match(/```\w+:/g) || []).length
-            store.updateLastMessage(
-              fileCount > 0
-                ? `正在生成网站代码...（已完成 ${fileCount} 个文件）`
-                : '正在生成网站代码...'
-            )
-          } else if (data.type === 'done') {
-            break
+          if (!line.startsWith('data: ')) continue
+          try {
+            const data = JSON.parse(line.slice(6))
+            if (data.type === 'text') {
+              fullResponse += data.content
+              const fileCount = (fullResponse.match(/```\w+:/g) || []).length
+              store.updateLastMessage(
+                fileCount > 0
+                  ? `正在生成网站代码...（已完成 ${fileCount} 个文件）`
+                  : '正在生成网站代码...'
+              )
+            } else if (data.type === 'done') {
+              break
+            }
+          } catch {
+            // skip malformed SSE lines
           }
         }
       }
@@ -62,10 +71,15 @@ export function useBuilder() {
         store.updateLastMessage('代码生成完成，但未能解析文件结构，请重试。')
         store.setStep('preview')
       }
-    } catch {
-      store.updateLastMessage('代码生成失败，请重试。')
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') {
+        store.updateLastMessage('代码生成超时，请重试。')
+      } else {
+        store.updateLastMessage('代码生成失败，请重试。')
+      }
+    } finally {
+      clearTimeout(timeoutId)
     }
-
     store.setStreamingDone()
   }, [store])
 
@@ -86,56 +100,70 @@ export function useBuilder() {
 
       let fullResponse = ''
 
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120_000)
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: apiMessages }),
+          signal: controller.signal,
         })
 
         const reader = res.body?.getReader()
         const decoder = new TextDecoder()
         if (!reader) throw new Error('No response body')
 
+        let buffer = ''
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
 
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n').filter((l) => l.startsWith('data: '))
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
 
           for (const line of lines) {
-            const data = JSON.parse(line.slice(6))
-
-            if (data.type === 'text') {
-              fullResponse += data.content
-              store.updateLastMessage(fullResponse)
-
-              const stateUpdate = extractStateUpdate(fullResponse)
-              if (stateUpdate) {
-                if (stateUpdate.step) {
-                  store.setStep(stateUpdate.step as Parameters<typeof store.setStep>[0])
+            if (!line.startsWith('data: ')) continue
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.type === 'text') {
+                fullResponse += data.content
+                store.updateLastMessage(fullResponse)
+                const stateUpdate = extractStateUpdate(fullResponse)
+                if (stateUpdate) {
+                  if (stateUpdate.step) {
+                    store.setStep(stateUpdate.step as Parameters<typeof store.setStep>[0])
+                  }
+                  if (stateUpdate.requirements) {
+                    store.updateRequirements(stateUpdate.requirements as Partial<SiteRequirements>)
+                  }
+                  // Trigger (re)generation on any readyToGenerate signal — supports refinement
+                  if (stateUpdate.readyToGenerate) {
+                    store.setStreamingDone()
+                    setTimeout(() => triggerCodeGeneration(), 800)
+                    return
+                  }
                 }
-                if (stateUpdate.requirements) {
-                  store.updateRequirements(stateUpdate.requirements as Partial<SiteRequirements>)
-                }
-                // Trigger (re)generation on any readyToGenerate signal — supports refinement
-                if (stateUpdate.readyToGenerate) {
-                  store.setStreamingDone()
-                  setTimeout(() => triggerCodeGeneration(), 800)
-                  return
-                }
+              } else if (data.type === 'done') {
+                break
+              } else if (data.type === 'error') {
+                store.updateLastMessage(`抱歉，发生了错误：${data.error}`)
+                break
               }
-            } else if (data.type === 'done') {
-              break
-            } else if (data.type === 'error') {
-              store.updateLastMessage(`抱歉，发生了错误：${data.error}`)
-              break
+            } catch {
+              // skip malformed SSE lines
             }
           }
         }
-      } catch {
-        store.updateLastMessage('连接错误，请检查 API Key 配置是否正确。')
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') {
+          store.updateLastMessage('请求超时，请重试。')
+        } else {
+          store.updateLastMessage('连接错误，请检查 API Key 配置是否正确。')
+        }
+      } finally {
+        clearTimeout(timeoutId)
       }
 
       store.setStreamingDone()

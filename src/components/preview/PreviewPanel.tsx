@@ -20,6 +20,7 @@ const DEVICE_WIDTHS: Record<DeviceMode, string> = {
 
 export function PreviewPanel() {
   const { generatedFiles, activePreviewFile, context, isStreaming } = useBuilderStore()
+  const vibe = context.requirements.vibe as string | undefined
   const [viewMode, setViewMode] = useState<ViewMode>('code')
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop')
   const [exporting, setExporting] = useState(false)
@@ -154,6 +155,7 @@ export function PreviewPanel() {
               <LivePreview
                 files={generatedFiles}
                 width={DEVICE_WIDTHS[deviceMode]}
+                vibe={vibe}
               />
             </motion.div>
           )}

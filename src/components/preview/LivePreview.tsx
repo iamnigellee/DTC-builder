@@ -35,25 +35,51 @@ export default Link
 `
 
 const FONTS_SHIM = `
-const makeFont = (family) => () => ({
+const makeFont = (family: string, varName: string) => () => ({
   className: '',
-  variable: '--font-custom',
+  variable: varName,
   style: { fontFamily: family },
 })
-export const Inter = makeFont('Inter, sans-serif')
-export const Geist = makeFont('system-ui, sans-serif')
-export const Geist_Mono = makeFont('monospace')
-export const Playfair_Display = makeFont('"Playfair Display", Georgia, serif')
-export const Cormorant_Garamond = makeFont('"Cormorant Garamond", Georgia, serif')
-export const Space_Grotesk = makeFont('"Space Grotesk", sans-serif')
-export const Plus_Jakarta_Sans = makeFont('"Plus Jakarta Sans", sans-serif')
-export const DM_Sans = makeFont('"DM Sans", sans-serif')
-export const Outfit = makeFont('Outfit, sans-serif')
-export const Nunito = makeFont('Nunito, sans-serif')
-export const Lora = makeFont('Lora, Georgia, serif')
-export const Raleway = makeFont('Raleway, sans-serif')
-export const Bebas_Neue = makeFont('"Bebas Neue", Impact, sans-serif')
-export const Barlow_Condensed = makeFont('"Barlow Condensed", sans-serif')
+export const Inter = makeFont('Inter, sans-serif', '--font-inter')
+export const Geist = makeFont('system-ui, sans-serif', '--font-geist')
+export const Geist_Mono = makeFont('monospace', '--font-geist-mono')
+export const Playfair_Display = makeFont('"Playfair Display", Georgia, serif', '--font-playfair')
+export const Cormorant_Garamond = makeFont('"Cormorant Garamond", Georgia, serif', '--font-cormorant')
+export const Space_Grotesk = makeFont('"Space Grotesk", sans-serif', '--font-space-grotesk')
+export const Plus_Jakarta_Sans = makeFont('"Plus Jakarta Sans", sans-serif', '--font-jakarta')
+export const DM_Sans = makeFont('"DM Sans", sans-serif', '--font-dm-sans')
+export const Outfit = makeFont('Outfit, sans-serif', '--font-outfit')
+export const Nunito = makeFont('Nunito, sans-serif', '--font-nunito')
+export const Lora = makeFont('Lora, Georgia, serif', '--font-lora')
+export const Raleway = makeFont('Raleway, sans-serif', '--font-raleway')
+export const Bebas_Neue = makeFont('"Bebas Neue", Impact, sans-serif', '--font-bebas')
+export const Barlow_Condensed = makeFont('"Barlow Condensed", sans-serif', '--font-barlow')
+export const Montserrat = makeFont('Montserrat, sans-serif', '--font-montserrat')
+export const Roboto = makeFont('Roboto, sans-serif', '--font-roboto')
+export const Open_Sans = makeFont('"Open Sans", sans-serif', '--font-open-sans')
+export const Poppins = makeFont('Poppins, sans-serif', '--font-poppins')
+export const Source_Sans_3 = makeFont('"Source Sans 3", sans-serif', '--font-source-sans')
+export const Noto_Sans_SC = makeFont('"Noto Sans SC", sans-serif', '--font-noto-sc')
+export const Noto_Serif_SC = makeFont('"Noto Serif SC", serif', '--font-noto-serif-sc')
+export const DM_Serif_Display = makeFont('"DM Serif Display", serif', '--font-dm-serif')
+export const Josefin_Sans = makeFont('"Josefin Sans", sans-serif', '--font-josefin')
+`
+
+const NAVIGATION_SHIM = `
+export function useRouter() {
+  return {
+    push: (_url: string) => {},
+    replace: (_url: string) => {},
+    back: () => {},
+    forward: () => {},
+    refresh: () => {},
+    prefetch: (_url: string) => {},
+  }
+}
+export function usePathname() { return '/' }
+export function useSearchParams() { return new URLSearchParams() }
+export function notFound() { return null }
+export function redirect(_url: string) { return null }
 `
 
 // ── Transform Next.js code to plain React for Sandpack ──────────────────────
@@ -67,6 +93,8 @@ function stripNextJs(code: string): string {
       .replace(/from ['"]next\/image['"]/g, "from '/_shims/Image'")
       .replace(/from ['"]next\/link['"]/g, "from '/_shims/Link'")
       .replace(/from ['"]next\/font\/google['"]/g, "from '/_shims/fonts'")
+      .replace(/from ['"]next\/navigation['"]/g, "from '/_shims/navigation'")
+      .replace(/from ['"]next\/headers['"]/g, "// next/headers removed for preview")
       // Remove Next.js-only type imports
       .replace(/import type \{ Metadata \}[^\n]*\n/g, '')
       // Remove metadata export (multi-line object)
@@ -92,6 +120,7 @@ function buildSandpackFiles(
     '/_shims/Image.tsx': IMAGE_SHIM,
     '/_shims/Link.tsx': LINK_SHIM,
     '/_shims/fonts.ts': FONTS_SHIM,
+    '/_shims/navigation.ts': NAVIGATION_SHIM,
   }
 
   // Add generated files (skip layout.tsx — App.tsx handles the root)
@@ -131,10 +160,14 @@ export default function App() {
 interface LivePreviewProps {
   files: GeneratedFile[]
   width?: string
+  vibe?: string
 }
 
-export function LivePreview({ files, width = '100%' }: LivePreviewProps) {
+export function LivePreview({ files, width = '100%', vibe }: LivePreviewProps) {
   const sandpackFiles = useMemo(() => buildSandpackFiles(files), [files])
+
+  const LIGHT_VIBES = new Set(['B', 'D', 'E', 'F'])
+  const sandpackTheme = vibe && LIGHT_VIBES.has(vibe.toUpperCase()) ? 'light' : 'dark'
 
   return (
     <div
@@ -159,7 +192,7 @@ export function LivePreview({ files, width = '100%' }: LivePreviewProps) {
             'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap',
           ],
         }}
-        theme="dark"
+        theme={sandpackTheme}
       >
         <SandpackPreview
           showNavigator={false}
