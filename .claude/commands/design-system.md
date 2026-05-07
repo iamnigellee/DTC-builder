@@ -66,6 +66,22 @@
 特征：敢用空间，字体即设计
 ```
 
+### Vibe F — 暖白奢感（Warm Ivory Luxury）
+**适合：** 医美诊所、高端护肤、精品餐饮、婚礼/活动策划、高端咨询
+**参照感：** Sisu Clinic、Augustinus Bader、Graza、La Mer
+```
+背景：#faf8f4（象牙白）或 #f5f0e8（奶油白）
+主色：#b08d57（哑金）/ #8b6f4e（暖棕）/ #c9a882（浅金）
+辅色：#2c2418（深棕，用于文字）
+强调：极少量主色，配合留白使用
+字体：衬线（Cormorant Garamond / Playfair Display）+ 无衬线辅助
+边框：rgba(176, 141, 87, 0.2)（金色半透明）
+卡片：#ffffff + 极细金色边框
+特征：质感纸张感、暖光、奢而不冷、信任 + 情绪消费并存
+```
+
+**注意**：此 Vibe 适合有品牌色约束（深咖/金/暖白）的精品品牌。Vibe D（温暖有机）偏向大众生活方式，Vibe F 偏向高端消费 + 专业性并重。
+
 ---
 
 ## 二、排版系统（Typography）
@@ -126,6 +142,154 @@ icon 到标题：mb-4
 标题到正文：  mb-2
 内容到按钮：  mt-6
 ```
+
+---
+
+## 三点五、字体选择指南（Font Selection）
+
+### 按风格分类的推荐字体（Google Fonts）
+
+**工业 / 街头 / 潮牌**
+- `Space Grotesk` — 几何感，略带粗糙，现代
+- `Barlow Condensed` — 压缩感，工业力量
+- `Bebas Neue` — 全大写，极强力量感（只用于标题）
+- `Rajdhani` — 科技感几何，适合潮牌副标题
+- `DM Mono` — 等宽感，技术/极客风
+
+**高端 / 奢华 / 精品**
+- `Cormorant Garamond` — 纤细衬线，极致优雅（Vibe F 首选）
+- `Playfair Display` — 高对比衬线，经典奢华
+- `Libre Baskerville` — 可读性强的衬线，适合内容类
+- `Lora` — 温暖的现代衬线
+
+**干净 / 现代 / 科技**
+- `Inter` — 全能选手，屏幕可读性最佳（默认推荐）
+- `Geist` — Next.js 官方字体，极简现代
+- `Plus Jakarta Sans` — 友好的几何无衬线
+- `Outfit` — 圆润，年轻感
+
+**有机 / 温暖 / 手作**
+- `Nunito` — 圆润友好，适合亲子/食品
+- `Quicksand` — 轻盈有机感
+- `Poppins` — 几何圆润，活力
+
+**混搭规则：**
+- 标题用 Display/Serif + 正文用 Sans-serif = 高级感
+- 两种字体最多，超过两种显乱
+- 同类型（两种 sans-serif）混用时，字重对比必须拉开 3 级以上
+
+### 自定义字体技术集成
+
+```tsx
+// src/app/layout.tsx — 加载 Google Font
+import { Cormorant_Garamond, Inter } from 'next/font/google'
+
+const heading = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-heading',
+  display: 'swap',
+})
+const body = Inter({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+})
+
+export default function RootLayout({ children }) {
+  return (
+    <html className={`${heading.variable} ${body.variable}`}>
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+```css
+/* src/app/globals.css */
+:root {
+  --font-heading: var(--font-heading);  /* 来自 next/font */
+  --font-body: var(--font-body);
+}
+```
+
+```js
+// tailwind.config.ts
+extend: {
+  fontFamily: {
+    heading: ['var(--font-heading)', 'serif'],
+    body: ['var(--font-body)', 'sans-serif'],
+  }
+}
+```
+
+```tsx
+{/* 使用 */}
+<h1 className="font-heading font-bold">标题</h1>
+<p className="font-body">正文</p>
+```
+
+---
+
+## 三点七、背景纹理与质感（Surface Texture）
+
+**何时使用：** 用户要求"磨砂感""纸张感""有质感""不要平"时，以及 Vibe D / Vibe F 场景。
+
+### 方案 A — CSS Noise（轻量，推荐）
+
+```css
+/* globals.css */
+.texture-noise {
+  position: relative;
+}
+.texture-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+```
+
+```tsx
+{/* 使用 */}
+<section className="relative texture-noise bg-[#faf8f4]">
+  <div className="relative z-10">内容</div>
+</section>
+```
+
+### 方案 B — Tailwind 内联（更快）
+
+```tsx
+<div className="relative">
+  {/* 噪点纹理叠加层 */}
+  <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+    style={{
+      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E")`,
+    }}
+  />
+  内容
+</div>
+```
+
+### 方案 C — 渐变纹理（纸张/布料感）
+
+```tsx
+<section style={{
+  background: `
+    radial-gradient(ellipse at 20% 50%, rgba(176,141,87,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(201,168,130,0.06) 0%, transparent 50%),
+    #faf8f4
+  `
+}}>
+```
+
+**纹理使用原则：**
+- opacity 不超过 0.05（太明显变粗糙）
+- 只在大块背景区域用，不在卡片内用
+- 纹理层必须加 `pointer-events: none`
 
 ---
 
@@ -343,6 +507,113 @@ function ImageCard() {
 - 超过 1 秒的普通 UI 交互动效
 - bounce 过于强烈（stiffness > 400 且 damping < 15 会显廉价）
 - 同时触发超过 8 个 stagger 子元素（用虚拟化或分批）
+
+### 无障碍与性能强制规则
+
+**useReducedMotion — 所有动效组件必须接入：**
+```tsx
+import { useReducedMotion } from 'framer-motion'
+
+function AnimatedCard() {
+  const shouldReduce = useReducedMotion()
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: shouldReduce ? 0 : 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: shouldReduce ? 0.01 : 0.5 }}
+    />
+  )
+}
+```
+- **规则**：`y` / `scale` / `rotate` 偏移量在 `shouldReduce` 为 true 时归零
+- **规则**：`duration` 在 `shouldReduce` 为 true 时设为 `0.01`（不可设 0，framer 会跳帧）
+- **规则**：parallax、stagger、counter 类动效在 `shouldReduce` 下完全禁用
+
+**CSS 基线（globals.css 必须包含）：**
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+**移动端性能目标（Lighthouse）：**
+| 指标 | 目标 |
+|------|------|
+| Performance | ≥ 85 |
+| LCP | < 2.5 s |
+| CLS | < 0.1 |
+| FID / INP | < 200 ms |
+- Hero 区背景视频禁止自动播放（用 poster 静态图代替，移动端检测用 `window.innerWidth < 768`）
+- 粒子数量移动端 ≤ 30，桌面端 ≤ 80
+- 渐变 mesh / blob 动效：移动端降级为静态渐变
+
+---
+
+## 五·五、next/image 使用规范（强制）
+
+### 基础规则
+```tsx
+import Image from 'next/image'
+
+// ✅ Hero / LCP 图像：必须加 priority
+<Image src="/hero.jpg" alt="..." fill priority sizes="100vw" />
+
+// ✅ fill 模式容器必须有 position: relative + 明确尺寸
+<div className="relative w-full h-[600px]">
+  <Image src="..." alt="..." fill className="object-cover" />
+</div>
+
+// ✅ 列表图像：必须写 sizes 避免下载过大图
+<Image
+  src={product.image}
+  alt={product.name}
+  width={400}
+  height={400}
+  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+  className="object-cover rounded-xl"
+/>
+
+// ❌ 禁止
+<img src="..." />                    // 直接用 img 标签
+<Image src="..." width={400} height={400} />  // fill 模式漏写 sizes
+```
+
+### 外部域名白名单（next.config.ts）
+```ts
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.unsplash.com' },
+      { protocol: 'https', hostname: '**.pexels.com' },
+      { protocol: 'https', hostname: 'images.ctfassets.net' },
+    ],
+  },
+}
+```
+
+### 占位符（blur placeholder）
+```tsx
+// 本地图片自动生成 blurDataURL
+import heroImg from '@/public/hero.jpg'
+<Image src={heroImg} alt="..." fill priority placeholder="blur" />
+
+// 外部图片用 shimmer base64
+const shimmer = (w: number, h: number) => `
+<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#1a1a2e"/>
+</svg>`
+const toBase64 = (str: string) => Buffer.from(str).toString('base64')
+<Image
+  src={url}
+  blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(400, 300))}`}
+  placeholder="blur"
+/>
+```
 
 ---
 
