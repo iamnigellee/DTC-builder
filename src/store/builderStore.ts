@@ -21,6 +21,7 @@ interface BuilderState {
   setStep: (step: BuilderStep) => void
   updateRequirements: (reqs: Partial<SiteRequirements>) => void
   setGeneratedFiles: (files: GeneratedFile[]) => void
+  mergeGeneratedFiles: (files: GeneratedFile[]) => void
   setActivePreviewFile: (path: string) => void
   setStreaming: (v: boolean) => void
   reset: () => void
@@ -86,11 +87,25 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
 
   setGeneratedFiles(files) {
     set({ generatedFiles: files })
-    // Auto-select main page
     const main = files.find(
       (f) => f.path === 'src/app/page.tsx' || f.path.endsWith('page.tsx')
     )
     if (main) set({ activePreviewFile: main.path })
+  },
+
+  mergeGeneratedFiles(changedFiles) {
+    set((s) => {
+      const merged = [...s.generatedFiles]
+      for (const file of changedFiles) {
+        const idx = merged.findIndex((f) => f.path === file.path)
+        if (idx >= 0) {
+          merged[idx] = file
+        } else {
+          merged.push(file)
+        }
+      }
+      return { generatedFiles: merged }
+    })
   },
 
   setActivePreviewFile(path) {

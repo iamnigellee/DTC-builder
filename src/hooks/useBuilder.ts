@@ -83,6 +83,83 @@ export function useBuilder() {
     store.setStreamingDone()
   }, [store])
 
+  const triggerRefinement = useCallback(
+    async (userRequest: string) => {
+      store.setStep('refining')
+      store.setStreaming(true)
+      store.addMessage('assistant', '正在修改...')
+
+      const currentFiles = store.generatedFiles
+      let fullResponse = ''
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120_000)
+      try {
+        const res = await fetch('/api/refine', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: currentFiles, userRequest }),
+          signal: controller.signal,
+        })
+
+        const reader = res.body?.getReader()
+        const decoder = new TextDecoder()
+        if (!reader) throw new Error('No response body')
+
+        let buffer = ''
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.type === 'text') {
+                fullResponse += data.content
+                const displayText = fullResponse.replace(/```[\s\S]*?```/g, '').trim()
+                store.updateLastMessage(displayText || '正在修改...')
+              } else if (data.type === 'done') {
+                break
+              }
+            } catch {
+              // skip malformed SSE lines
+            }
+          }
+        }
+
+        const changedFiles = parseGeneratedFiles(fullResponse)
+        if (changedFiles.length > 0) {
+          store.mergeGeneratedFiles(changedFiles)
+          const displayText = fullResponse.replace(/```[\s\S]*?```/g, '').trim()
+          store.updateLastMessage(
+            (displayText ? displayText + '\n\n' : '') +
+              `✅ 已更新 **${changedFiles.length} 个文件**。还需要调整什么？`
+          )
+        } else {
+          const displayText = fullResponse.replace(/```[\s\S]*?```/g, '').trim()
+          store.updateLastMessage(displayText || '修改完成。')
+        }
+        store.setStep('preview')
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') {
+          store.updateLastMessage('请求超时，请重试。')
+        } else {
+          store.updateLastMessage('修改失败，请重试。')
+        }
+      } finally {
+        clearTimeout(timeoutId)
+      }
+
+      store.setStreamingDone()
+    },
+    [store]
+  )
+
   const sendMessage = useCallback(
     async (userText: string) => {
       if (store.isStreaming) return
@@ -138,10 +215,16 @@ export function useBuilder() {
                   if (stateUpdate.requirements) {
                     store.updateRequirements(stateUpdate.requirements as Partial<SiteRequirements>)
                   }
-                  // Trigger (re)generation on any readyToGenerate signal — supports refinement
                   if (stateUpdate.readyToGenerate) {
                     store.setStreamingDone()
-                    setTimeout(() => triggerCodeGeneration(), 800)
+                    const hasFiles = store.generatedFiles.length > 0
+                    if (hasFiles) {
+                      // Incremental patch — only re-generate changed files
+                      setTimeout(() => triggerRefinement(userText), 800)
+                    } else {
+                      // First generation — full site build
+                      setTimeout(() => triggerCodeGeneration(), 800)
+                    }
                     return
                   }
                 }
@@ -168,8 +251,8 @@ export function useBuilder() {
 
       store.setStreamingDone()
     },
-    [store, triggerCodeGeneration]
+    [store, triggerCodeGeneration, triggerRefinement]
   )
 
-  return { sendMessage, triggerCodeGeneration }
+  return { sendMessage, triggerCodeGeneration, triggerRefinement }
 }
