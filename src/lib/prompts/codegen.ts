@@ -21,6 +21,10 @@ export function buildCodeGenPrompt(requirements: SiteRequirements): string {
   const hasTestimonials = requirements.sections?.some(s => s.type === 'testimonials') ?? true
   const hasPricing = requirements.sections?.some(s => s.type === 'pricing')
   const hasFaq = requirements.sections?.some(s => s.type === 'faq')
+  const hasNewsletter = requirements.features?.includes('newsletter') || requirements.sections?.some(s => s.type === 'newsletter')
+  const hasStats = requirements.sections?.some(s => s.type === 'stats')
+  const hasMenu = requirements.sections?.some(s => s.type === 'menu') || requirements.businessType?.includes('餐')
+  const hasBooking = requirements.features?.includes('booking')
 
   const heroVariant = HERO_VARIANTS[vibe === 'C' ? 'split' : 'gradient']
 
@@ -43,6 +47,11 @@ export function buildCodeGenPrompt(requirements: SiteRequirements): string {
       ? `\n### FAQ (reference implementation):\n\`\`\`tsx\n${FAQ_TEMPLATE}\n\`\`\``
       : '',
     `\n### Footer (reference implementation):\n\`\`\`tsx\n${FOOTER_TEMPLATE}\n\`\`\``,
+    hasEcommerce ? `\n### Cart Store (Zustand — save as src/store/cartStore.ts):\n\`\`\`ts\n${CART_STORE_TEMPLATE}\n\`\`\`` : '',
+    hasNewsletter ? `\n### Newsletter (reference implementation):\n\`\`\`tsx\n${NEWSLETTER_TEMPLATE}\n\`\`\`` : '',
+    hasStats ? `\n### Stats (reference implementation):\n\`\`\`tsx\n${STATS_TEMPLATE}\n\`\`\`` : '',
+    hasMenu ? `\n### Menu (reference implementation):\n\`\`\`tsx\n${MENU_TEMPLATE}\n\`\`\`` : '',
+    hasBooking ? `\n### Booking Form (reference implementation):\n\`\`\`tsx\n${BOOKING_FORM_TEMPLATE}\n\`\`\`` : '',
   ]
     .filter(Boolean)
     .join('\n')
