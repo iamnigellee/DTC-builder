@@ -86,7 +86,7 @@ export interface EcommerceConfig {
   productCount: number
   hasCart: boolean
   hasCheckout: boolean
-  paymentProvider: 'stripe' | 'paypal' | 'none'
+  paymentProvider: 'stripe' | 'paypal' | 'wechat_qr' | 'none'
   currency: string
 }
 

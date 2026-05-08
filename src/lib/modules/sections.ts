@@ -431,6 +431,115 @@ export function Menu() {
   )
 }`
 
+export const GALLERY_TEMPLATE = `
+'use client'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
+import { X, ZoomIn } from 'lucide-react'
+
+interface GalleryImage {
+  src: string
+  alt: string
+  aspect?: 'square' | 'portrait' | 'landscape'
+}
+
+const IMAGES: GalleryImage[] = [
+  { src: '/images/gallery-1.jpg', alt: '作品描述', aspect: 'landscape' },
+  { src: '/images/gallery-2.jpg', alt: '作品描述', aspect: 'portrait' },
+  { src: '/images/gallery-3.jpg', alt: '作品描述', aspect: 'square' },
+  { src: '/images/gallery-4.jpg', alt: '作品描述', aspect: 'portrait' },
+  { src: '/images/gallery-5.jpg', alt: '作品描述', aspect: 'landscape' },
+  { src: '/images/gallery-6.jpg', alt: '作品描述', aspect: 'square' },
+]
+
+const ASPECT_CLASS: Record<string, string> = {
+  square: 'aspect-square',
+  portrait: 'aspect-[3/4]',
+  landscape: 'aspect-[4/3]',
+}
+
+export function Gallery() {
+  const [selected, setSelected] = useState<GalleryImage | null>(null)
+
+  return (
+    <section className="py-24 bg-[var(--bg)]" id="gallery">
+      <div className="container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl md:text-5xl font-black text-[var(--text)] mb-4">作品集</h2>
+          <p className="text-[var(--text-muted)]">用镜头记录每一个值得被记住的瞬间</p>
+        </motion.div>
+
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+          {IMAGES.map((img, i) => (
+            <motion.div
+              key={img.src}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.07 }}
+              onClick={() => setSelected(img)}
+              className={\`group relative break-inside-avoid overflow-hidden rounded-xl cursor-zoom-in \${ASPECT_CLASS[img.aspect ?? 'square']}\`}
+            >
+              <Image
+                src={img.src}
+                alt={img.alt}
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelected(null)}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          >
+            <button
+              onClick={() => setSelected(null)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onClick={e => e.stopPropagation()}
+              className="relative max-w-4xl max-h-[85vh] w-full h-full"
+            >
+              <Image
+                src={selected.src}
+                alt={selected.alt}
+                fill
+                className="object-contain"
+                sizes="100vw"
+                priority
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  )
+}`
+
 export const BOOKING_FORM_TEMPLATE = `
 'use client'
 import { useState } from 'react'

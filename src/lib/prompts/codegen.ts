@@ -11,6 +11,7 @@ import {
   STATS_TEMPLATE,
   MENU_TEMPLATE,
   BOOKING_FORM_TEMPLATE,
+  GALLERY_TEMPLATE,
 } from '../modules/sections'
 
 export function buildCodeGenPrompt(requirements: SiteRequirements): string {
@@ -25,6 +26,7 @@ export function buildCodeGenPrompt(requirements: SiteRequirements): string {
   const hasStats = requirements.sections?.some(s => s.type === 'stats')
   const hasMenu = requirements.sections?.some(s => s.type === 'menu') || requirements.businessType?.includes('餐')
   const hasBooking = requirements.features?.includes('booking')
+  const hasGallery = requirements.features?.includes('gallery') || requirements.sections?.some(s => s.type === 'gallery')
 
   const heroVariant = HERO_VARIANTS[vibe === 'C' ? 'split' : 'gradient']
 
@@ -52,6 +54,7 @@ export function buildCodeGenPrompt(requirements: SiteRequirements): string {
     hasStats ? `\n### Stats (reference implementation):\n\`\`\`tsx\n${STATS_TEMPLATE}\n\`\`\`` : '',
     hasMenu ? `\n### Menu (reference implementation):\n\`\`\`tsx\n${MENU_TEMPLATE}\n\`\`\`` : '',
     hasBooking ? `\n### Booking Form (reference implementation):\n\`\`\`tsx\n${BOOKING_FORM_TEMPLATE}\n\`\`\`` : '',
+    hasGallery ? `\n### Gallery (reference implementation — masonry layout with lightbox):\n\`\`\`tsx\n${GALLERY_TEMPLATE}\n\`\`\`` : '',
   ]
     .filter(Boolean)
     .join('\n')
@@ -107,16 +110,67 @@ ${hasEcommerce ? '8. 产品网格包含颜色/规格变体选择器，购物车�
 ${hasStripe ? '9. Stripe checkout 集成完整 API route' : ''}`
 }
 
-export function buildRefinementPrompt(currentCode: string, userRequest: string): string {
+/**
+ * Pick the files most relevant to the user request.
+ * Keyword → component heuristics so we never blind-truncate.
+ */
+function selectRelevantFiles(
+  files: Record<string, string>,
+  userRequest: string,
+  maxChars = 12_000
+): string {
+  const lower = userRequest.toLowerCase()
+
+  // Priority order: exact keyword match → Hero → page → globals → everything else
+  const priority: Array<[RegExp, string[]]> = [
+    [/hero|banner|headline|button|按钮|标题/, ['Hero.tsx', 'page.tsx']],
+    [/navbar|nav|导航|菜单/, ['Navbar.tsx', 'page.tsx']],
+    [/footer|页脚/, ['Footer.tsx', 'page.tsx']],
+    [/color|colour|颜色|配色|主色|紫|暖/, ['globals.css', 'page.tsx']],
+    [/font|字体|字重/, ['layout.tsx', 'globals.css']],
+    [/testimonial|评价/, ['Testimonials.tsx', 'page.tsx']],
+    [/pricing|价格/, ['Pricing.tsx', 'page.tsx']],
+  ]
+
+  let chosen: string[] = []
+  for (const [pattern, targets] of priority) {
+    if (pattern.test(lower)) {
+      chosen = targets
+      break
+    }
+  }
+  // Fallback: page.tsx + globals.css
+  if (chosen.length === 0) chosen = ['page.tsx', 'globals.css']
+
+  const fileKeys = Object.keys(files)
+  const orderedKeys = [
+    ...chosen.filter(name => fileKeys.some(k => k.endsWith(name))).flatMap(name =>
+      fileKeys.filter(k => k.endsWith(name))
+    ),
+    ...fileKeys.filter(k => !chosen.some(name => k.endsWith(name))),
+  ]
+
+  let result = ''
+  for (const key of orderedKeys) {
+    const block = `\n## ${key}\n\`\`\`tsx\n${files[key]}\n\`\`\`\n`
+    if (result.length + block.length > maxChars) break
+    result += block
+  }
+  return result
+}
+
+export function buildRefinementPrompt(
+  files: Record<string, string>,
+  userRequest: string
+): string {
+  const codeContext = selectRelevantFiles(files, userRequest)
   return `用户想要修改网站，请根据要求调整代码。
 
 ## 用户请求
 ${userRequest}
 
-## 当前主页代码（部分）
-\`\`\`tsx
-${currentCode.slice(0, 3000)}
-\`\`\`
+## 当前代码（相关文件完整内容）
+${codeContext}
 
 请：
 1. 理解用户的修改意图
