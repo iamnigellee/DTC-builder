@@ -9,20 +9,17 @@ import { useBuilderStore } from '@/store/builderStore'
 
 export default function BuilderPage() {
   const { sendMessage } = useBuilder()
-  const { addMessage } = useBuilderStore()
+  const { addMessage, setStep } = useBuilderStore()
 
   // Send welcome message on mount
   useEffect(() => {
     const timer = setTimeout(() => {
+      setStep('collecting')
       addMessage(
         'assistant',
         `嗨，我是你的建站搭档。
 
-跟我说说你在做什么？品牌名、一句话、参考链接、截图——随便哪种都行，我来帮你把它变成独立站。
-
-\`\`\`json
-{"step": "collecting", "requirements": {}, "readyToGenerate": false}
-\`\`\``
+跟我说说你在做什么？随便说，我来帮你变成网站。`
       )
     }, 400)
     return () => clearTimeout(timer)

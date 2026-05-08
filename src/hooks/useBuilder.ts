@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import { useBuilderStore } from '@/store/builderStore'
-import { extractStateUpdate, parseGeneratedFiles } from '@/lib/utils'
+import { extractStateUpdate, parseGeneratedFiles, stripStateBlock } from '@/lib/utils'
 import { SiteRequirements } from '@/lib/types'
 
 export function useBuilder() {
@@ -206,7 +206,7 @@ export function useBuilder() {
               const data = JSON.parse(line.slice(6))
               if (data.type === 'text') {
                 fullResponse += data.content
-                store.updateLastMessage(fullResponse)
+                store.updateLastMessage(stripStateBlock(fullResponse))
                 const stateUpdate = extractStateUpdate(fullResponse)
                 if (stateUpdate) {
                   if (stateUpdate.step) {
